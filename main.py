@@ -1,25 +1,37 @@
-import unittest
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
+from check_recursively import check_recursively
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("url")
+parser.add_argument("-p", "--plugins", help="run selenium plugins separate by colon. Ex: "
+                                            "ModalCheck. Number threads will decrease to 1. Don't set threads too much, "
+                                            "browser will kill your computer")
+parser.add_argument("-t", "--threads",
+                    help="run selenium plugins separate by colon. Default = 10")
+
+args = parser.parse_args()
 
 
-class PythonOrgSearch(unittest.TestCase):
+def main():
+    config = dict()
+    if args.threads:
+        config["threads"] = int(args.threads)
+    else:
+        config["threads"] = 10
+    # add selenium plugins
+    if args.plugins:
+        plugins = []
+        for p in args.plugins.split(","):
+            plugins.append(p)
+            config[p] = dict()
 
-    def setUp(self):
-        self.driver = webdriver.Chrome()
+        config["enabledplugins"] = plugins
 
-    def test_search_in_python_org(self):
-        driver = self.driver
-        driver.get("http://www.python.org")
-        self.assertIn("Python", driver.title)
-        elem = driver.find_element_by_name("q")
-        elem.send_keys("pycon")
-        elem.send_keys(Keys.RETURN)
-        assert "No results found." not in driver.page_source
+        # auto decrease number thread when use selenium plugins
+        config["threads"] = 1
 
-    def tearDown(self):
-        self.driver.close()
+    check_recursively(args.url, config=config)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    main()
